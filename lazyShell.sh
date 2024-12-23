@@ -13,8 +13,8 @@ function ctrl_c(){
   exit 1
 }
 
-trap ctrl_c INT 
-#dawdawd
+trap ctrl_c INT
+
 function helpPanel(){
   echo -e "\n${redColour}[!] Usage: $0${endColour}"
   for i in $(seq 1 80); do echo -ne "${redColour}-"; done; echo -ne "${endColour}"
@@ -38,6 +38,28 @@ function dependencies(){
   fi
 }
 
+function checkRoot(){
+  echo -ne "\n${yellowColour}[+]${endColour} ${grayColour}Checking if u are root...${endColour}"
+  sleep 2
+  uid="$(id | grep -oP '(?<=uid=)[0-9]{1,}')"
+  if [[ $uid == "0" ]]; then 
+    echo -e "${greenColour} [YES] ${endColour}"
+  else
+    echo -e "${redColour}[!] You are not root! Exiting...${endColour}"
+    exit 1
+  fi
+}
+
+function checkPort(){
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Checking if port $port is available...${endColour}"
+  sleep 2
+  check_port="$(lsof -i -P -n | grep LISTEN | awk '{print $9}' | tail -n 1)"
+  if [[ $check_port == "*:$port" ]]; then
+    echo -e " \n${redColour}[!] Port $port is already in use!${endColour}"
+    exit 1
+  fi
+  
+}
 
 function getShell(){
   # Get terminal size
@@ -63,7 +85,7 @@ function getShell(){
   tmux send-keys -t reverse_shell "export SHELL=/bin/bash" Enter 
   tmux send-keys -t reverse_shell "stty rows $rows columns $columns" Enter 
   tmux send-keys -t reverse_shell "C-l"
-  #sleep 2
+  sleep 2
   tmux attach-session -t reverse_shell 
 }
 
@@ -82,5 +104,7 @@ if [[ parameter_counter -ne 3 ]]; then
   helpPanel 
 else
   dependencies
+  checkRoot
+  checkPort
   getShell
 fi
